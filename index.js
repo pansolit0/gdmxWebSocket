@@ -3,36 +3,40 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const PORT = process.env.PORT;
-
+const PORT = process.env.PORT || 3000;
 const app = express();
-
-// Crea un servidor HTTP a partir de la aplicación Express
 const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*", // Acepta conexiones de cualquier origen. Ajusta esto para mayor seguridad en producción.
+    methods: ["GET", "POST"]
+  }
+});
+  
+// Importar el pool de conexión a la base de datos
+// const pool = require('./path/to/your/database/config');
 
-// Inicializa una nueva instancia de Socket.io con el servidor HTTP
-const io = socketIo(server);
+// Importa el controlador de sockets
+const { obtenerDatosChartGraficoSocket } = require('./controllers/socketController');
+const pool = require('./config/db.config');
 
-
-
-// Define un evento de conexión para Socket.io
 io.on('connection', (socket) => {
   console.log('Un usuario se ha conectado');
+
+  // Utiliza el controlador aquí, pasando tanto el socket como el pool
+  obtenerDatosChartGraficoSocket(socket, pool);
 
   socket.on('disconnect', () => {
     console.log('Un usuario se ha desconectado');
   });
 });
 
-
-  // Define la ruta raíz de la aplicación
 app.get('/', (req, res) => {
     res.send('<h1>Hola mundo con Socket.io!</h1>');
-  });
+});
 
-  server.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
-  });
+});
 
-
-module.exports = app ;
+module.exports = app;
